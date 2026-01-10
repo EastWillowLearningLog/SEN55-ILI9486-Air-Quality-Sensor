@@ -1,3 +1,5 @@
+#ifndef ARDUINO
+
 #include "src/App/App.h"
 #include "src/Sensor/SensorMock.h"
 #include "src/Display/LCD_Driver.h"
@@ -38,3 +40,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+#endif

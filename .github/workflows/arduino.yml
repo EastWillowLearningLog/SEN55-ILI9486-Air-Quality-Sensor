@@ -1,0 +1,25 @@
+name: Arduino CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+
+      - name: Install dependencies
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli lib install "Sensirion I2C SEN5X" "Sensirion Core"
+
+      - name: Compile sketch
+        run: |
+          arduino-cli compile --fqbn arduino:avr:uno SEN55-ILI9486-Air-Quality-Sensor.ino
