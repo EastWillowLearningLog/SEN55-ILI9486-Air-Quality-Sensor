@@ -6,9 +6,8 @@
 #include <cstdio>
 #include <cmath>
 
-// Define isnan if not available (standard C++ has std::isnan in <cmath>)
-#ifndef isnan
-#define isnan std::isnan
+#ifndef ARDUINO
+using std::isnan;
 #endif
 
 class SensorMock : public SensorIntf {
