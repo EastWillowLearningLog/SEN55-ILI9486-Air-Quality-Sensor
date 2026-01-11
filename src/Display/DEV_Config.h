@@ -1,3 +1,8 @@
+/*
+ * NOTE: This file is adapted from Waveshare drivers.
+ * Original License: No explicit open-source license found (Copyright Waveshare).
+ * Used under assumption of compatibility or fair use as per user instruction (Option B).
+ */
 /******************************************************************************
 **************************Hardware interface layer*****************************
 * | file          :   DEV_Config.h
@@ -12,6 +17,9 @@
 #ifdef ARDUINO
 #include <SPI.h>
 #include <Wire.h>
+
+#define USE_SPI_4W 1
+#define USE_IIC    0
 
 //GPIO config
 //LCD
@@ -29,6 +37,17 @@
 #define LCD_DC_0		digitalWrite(LCD_DC, LOW)
 #define LCD_DC_1		digitalWrite(LCD_DC, HIGH)
 
+//Touch
+#define TP_CS 4
+#define TP_CS_0    digitalWrite(TP_CS, LOW)
+#define TP_CS_1    digitalWrite(TP_CS, HIGH)
+
+#define TP_IRQ 3
+#define GET_TP_IRQ    digitalRead(TP_IRQ)
+
+#define TP_BUSY 6
+#define GET_TP_BUSY    digitalRead(TP_BUSY)
+
 #else
 // PC Mocks
 #include <stdint.h>
@@ -42,6 +61,12 @@
 #define LCD_DC 7
 #define LCD_DC_0
 #define LCD_DC_1
+
+// Touch Mocks
+#define TP_CS 4
+#define TP_CS_0
+#define TP_CS_1
+
 #endif
 
 
