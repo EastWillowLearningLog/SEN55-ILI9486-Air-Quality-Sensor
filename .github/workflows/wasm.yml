@@ -4,10 +4,23 @@ on:
   push:
     branches:
       - main
-  pull_request:
+
+# 1. REQUIRED PERMISSIONS FOR OFFICIAL DEPLOYMENT
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
@@ -29,9 +42,23 @@ jobs:
         run: |
           cd build
           emmake make
+      
+      # IMPORTANT: Disable Jekyll so files starting with "_" (common in WASM) aren't ignored
+      - name: Create .nojekyll
+        run: touch build/.nojekyll
+
+      # --- START NEW DEPLOYMENT STEPS ---
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'build'
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+        id: deployment
+        uses: actions/deploy-pages@v4
+        # Only deploy if pushing to main (don't deploy PRs)
+        if: github.ref == 'refs/heads/main'
