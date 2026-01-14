@@ -55,7 +55,14 @@ void LCD_Init(LCD_SCAN_DIR LCD_ScanDir, uint16_t LCD_BLval) {
     }
 
     // Create renderer
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    // Use default (0) which tries hardware first then software, or just software if needed
+    // In CI/headless with dummy driver, we might need to be careful.
+    renderer = SDL_CreateRenderer(window, -1, 0);
+    if (renderer == NULL) {
+        // Fallback to software
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    }
+
     if (renderer == NULL) {
         printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
         exit(1);
