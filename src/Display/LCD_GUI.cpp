@@ -15,13 +15,7 @@
 ******************************************************************************/
 #include "LCD_GUI.h"
 
-#ifdef ARDUINO
-// #include "Debug.h" // Debug.h was deleted/not found in file list previously, assuming direct debug or re-add if needed
-#define DEBUG Serial.print
-#else
-#include <stdio.h>
-#define DEBUG(...) printf(__VA_ARGS__)
-#endif
+#include "Debug.h"
 
 extern LCD_DIS sLCD_DIS;
 /******************************************************************************
