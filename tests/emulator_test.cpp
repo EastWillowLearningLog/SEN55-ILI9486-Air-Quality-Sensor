@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <string>
 #include <vector>
 
 // Helper to execute command and return exit code
@@ -25,6 +26,14 @@ protected:
   void TearDown() override {
     // Optional cleanup
   }
+
+  std::string GetReferencePath(const std::string &filename) {
+#ifdef TEST_RESOURCE_DIR
+    return std::string(TEST_RESOURCE_DIR) + "/" + filename;
+#else
+    return "tests/reference/" + filename;
+#endif
+  }
 };
 
 TEST_F(EmulatorTest, RunsInTestModeAndProducesOutput) {
@@ -39,10 +48,13 @@ TEST_F(EmulatorTest, RunsInTestModeAndProducesOutput) {
 }
 
 TEST_F(EmulatorTest, OutputMatchesReference) {
+  std::string refPath = GetReferencePath("golden_screen.bmp");
+
   // Ensure reference exists
-  std::ifstream reference("tests/reference/golden_screen.bmp");
+  std::ifstream reference(refPath);
   if (!reference.good()) {
-    FAIL() << "Reference image not found at tests/reference/golden_screen.bmp. "
+    FAIL() << "Reference image not found at " << refPath
+           << ". "
               "Run once to generate it.";
   }
 
@@ -51,7 +63,7 @@ TEST_F(EmulatorTest, OutputMatchesReference) {
 
   // Compare files
   auto actual = ReadFile("screenshot.bmp");
-  auto expected = ReadFile("tests/reference/golden_screen.bmp");
+  auto expected = ReadFile(refPath.c_str());
 
   // Simple byte comparison for now.
   // In real world, we might want fuzzy comparison for rendering differences.
