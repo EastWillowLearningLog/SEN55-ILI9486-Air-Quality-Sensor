@@ -39,3 +39,14 @@ The main project build must continue to work with tests as a subdirectory.
 - **WHEN** A developer runs `cmake -S . -B build` from the project root
 - **THEN** The main project and all subdirectories (including tests) are configured
 - **AND** Running `ctest` executes all tests successfully
+
+### Requirement: GitHub Action Version Standards
+The CI/CD workflows MUST use specified versions of standard GitHub Actions to ensure security and stability.
+
+#### Scenario: Using Checkout Action
+- **WHEN** a workflow step uses `actions/checkout`
+- **THEN** it MUST use version `@v4`
+
+#### Scenario: Using Artifact Upload Action
+- **WHEN** a workflow step uses `actions/upload-artifact`
+- **THEN** it MUST use version `@v4`
