@@ -1,3 +1,10 @@
+# SEN55-ILI9486 Air Quality Sensor
+
+[![Arduino CI](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/arduino.yml/badge.svg)](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/arduino.yml)
+[![Unit Tests](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/tests.yml/badge.svg)](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/tests.yml)
+[![Emulator CI](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/emulator.yml/badge.svg)](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/emulator.yml)
+[![WASM Build](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/wasm.yml/badge.svg)](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/wasm.yml)
+
 Web mockup Display:
 https://eastwillowlearninglog.github.io/SEN55-ILI9486-Air-Quality-Sensor/
 
@@ -9,18 +16,50 @@ Software Bill of Materials:
 Acknowledging AI Usage:
 * Code assistance and debugging for the LCD driver and SEN55 implementation provided by Google's Gemini.
 
-### Emulator Usage
+---
 
-The emulator supports two modes of operation:
+## Emulator Testing
 
-1.  **Interactive Mode (Default)**:
-    Run the emulator without any arguments to start an interactive session. You can interact with the simulated LCD screen using your mouse.
-    ```bash
-    ./build/DisplayEmulator
-    ```
+The DisplayEmulator supports multiple testing modes to validate both execution and rendering correctness.
 
-2.  **Test Mode (CI/Automated)**:
-    Run the emulator with the `--test` flag. In this mode, it runs for a fixed duration (25 frames), captures the screen content to `screenshot.bmp`, and exits automatically. This is used for automated regression testing.
-    ```bash
-    ./build/DisplayEmulator --test
-    ```
+### 1. Interactive Mode (Local Development)
+Run the emulator without any arguments to start an interactive session with mouse/keyboard input.
+
+```bash
+./build/DisplayEmulator
+```
+
+**Use Case**: Manual UI testing, visual inspection, interaction debugging.
+
+---
+
+### 2. Test Mode (CI Smoke Test)
+Run the emulator with the `--test` flag for automated execution validation.
+
+```bash
+./build/DisplayEmulator --test
+```
+
+**Behavior**:
+- Runs for exactly 25 frames (deterministic duration)
+- Captures final screen to `screenshot.bmp`
+- Exits automatically with code 0 on success
+- Validated in CI via `.github/workflows/emulator.yml`
+
+**Purpose**: Smoke test ensuring the emulator can execute in headless CI environments (xvfb-run) without crashes. This validates SDL2 initialization, basic rendering loops, and screenshot generation. **Does not validate rendering correctness** - see Integration Tests below.
+
+---
+
+### 3. Integration Testing (Planned)
+Visual regression testing via GTest-controlled checkpoint execution.
+
+**Workflow** (future `integration-test.yml`):
+- Programmatic control via GTest/GMock
+- Multi-checkpoint screenshot capture
+- Pixel-level comparison against reference images (ImageMagick)
+- Artifact upload on regression detection
+
+**Purpose**: Ensure UI renders correctly by detecting visual regressions through automated screenshot comparison.
+
+**Documentation**: See `openspec/specs/display-integration-test/spec.md` for detailed requirements.
+

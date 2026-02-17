@@ -54,3 +54,60 @@ graph TD
 - **Arduino**: Built using `arduino-cli` targeting `arduino:avr:uno`. Verified in CI/CD pipeline.
 - **PC Simulation**: Built using CMake with `g++` and SDL2 backend.
 - **WebAssembly**: Built using Emscripten (emsdk) targeting generic WASM/HTML5 output.
+
+## Testing Strategy
+
+The project employs a multi-tier testing approach to ensure correctness across different validation levels.
+
+### Testing Pyramid
+
+```
+                      ┌────────────────────────┐
+                      │  Integration Tests     │ ← Visual Regression
+                      │  (Planned)             │   Multi-checkpoint
+                      ├────────────────────────┤   GTest-controlled
+                      │  Emulator Smoke Test   │ ← Execution Validation
+                      │  (emulator.yml)        │   Crash detection
+                      ├────────────────────────┤
+                      │  Unit Tests            │ ← Component Isolation
+                      │  (tests.yml)           │   Fast, deterministic
+                      └────────────────────────┘
+```
+
+### Test Categories
+
+#### 1. Unit Tests (`tests.yml`)
+- **Purpose**: Validate individual components in isolation
+- **Scope**: Sensor mocking, display primitives, data structures
+- **Execution**: Standalone CMake build from `tests/` directory
+- **Speed**: Fast (~10 seconds)
+- **CI Workflow**: `.github/workflows/tests.yml`
+
+#### 2. Emulator Smoke Test (`emulator.yml`)
+- **Purpose**: Verify emulator can execute without crashing
+- **Scope**: SDL2 initialization, basic rendering loop, screenshot generation
+- **Validation**: Exit code 0 (no crash detection)
+- **Speed**: Fast (~5 seconds)
+- **CI Workflow**: `.github/workflows/emulator.yml`
+- **Spec**: `openspec/specs/emulator-split/spec.md`
+
+#### 3. Display Integration Tests (Planned)
+- **Purpose**: Visual regression testing via screenshot comparison
+- **Scope**: UI rendering correctness, graphical output validation
+- **Validation**: Pixel-level comparison against reference images
+- **Control**: GTest/GMock for checkpoint-based execution
+- **Speed**: Slower (~30+ seconds)
+- **CI Workflow**: `.github/workflows/integration-test.yml` *(future)*
+- **Spec**: `openspec/specs/display-integration-test/spec.md`
+
+#### 4. Platform Verification
+- **Arduino CI** (`arduino.yml`): Compilation verification for embedded target
+- **WASM CI** (`wasm.yml`): Web build + deployment to GitHub Pages
+
+### Key Testing Principles
+
+- **Deterministic Execution**: All automated tests use fixed seeds, timestamps, and sensor data
+- **Independent Workflows**: Tests run in parallel for faster feedback
+- **Artifact Preservation**: Failed tests upload debugging artifacts (screenshots, diffs)
+- **Separation of Concerns**: Fast smoke tests catch crashes; slower integration tests catch regressions
+

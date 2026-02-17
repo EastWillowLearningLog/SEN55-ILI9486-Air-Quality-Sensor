@@ -13,4 +13,10 @@ A comprehensive air quality monitoring system utilizing the Sensirion SEN55 sens
 - **Data Visualization**: Graphical display of sensor values on ILI9486 TFT.
 - **Interactive UI**: Touch screen interaction for page navigation and calibration.
 - **Cross-Platform**: Unified codebase supporting embedded hardware and PC/Web simulation.
-- **CI/CD**: Automated pipelines for Arduino compilation, PC builds, and WASM deployment.
+- **CI/CD**: Automated pipelines for:
+  - Arduino compilation verification
+  - PC builds and unit tests
+  - Emulator smoke testing (execution validation)
+  - Display integration tests (visual regression) - *Planned*
+  - WASM deployment to GitHub Pages
+

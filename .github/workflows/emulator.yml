@@ -32,10 +32,10 @@ jobs:
           cd build
           cmake --build .
 
-      - name: Run Emulator Integration Test
+      - name: Run Emulator Test
         run: |
           cd build
-          xvfb-run ctest -R EmulatorIntegrationTest --output-on-failure
+          xvfb-run ./DisplayEmulator --test
 
       - name: Upload Screenshot (on failure)
         if: failure()
