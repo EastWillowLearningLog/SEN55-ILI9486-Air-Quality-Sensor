@@ -3,9 +3,7 @@
 ## Purpose
 
 This specification defines the standard configuration requirements for GitHub Actions workflows in the project. It ensures consistent checkout behavior across all CI/CD workflows, particularly regarding submodule handling.
-
 ## Requirements
-
 ### Requirement: GitHub Actions workflows MUST use checkout with recursive submodules
 All GitHub Actions workflows that build or test the project SHALL use `actions/checkout@v4` with `submodules: recursive` configuration to ensure complete repository checkout including all submodule dependencies.
 
@@ -22,12 +20,15 @@ All GitHub Actions workflows that build or test the project SHALL use `actions/c
 - **THEN** the workflow MUST check out all submodules recursively before building or testing
 
 ### Requirement: Consistency across workflow files
-All workflow files that require source code SHALL use the same checkout configuration to prevent build failures due to missing dependencies.
+All workflow files that require source code SHALL use the same checkout configuration and follow the directory-based separation of test categories.
 
-#### Scenario: Multiple workflows use consistent checkout
-- **WHEN** comparing checkout steps across different workflow files
-- **THEN** all workflows that build or test the project MUST use identical checkout configuration including submodule settings
+#### Scenario: Unit test workflow checks out submodules
+- **WHEN** the unit test workflow (`.github/workflows/tests.yml`) runs
+- **THEN** it MUST check out all submodules recursively
+- **AND** it MUST only build and execute tests from the `tests/unit/` suite
 
-#### Scenario: New workflow follows standard pattern
-- **WHEN** creating a new GitHub Actions workflow that requires source code
-- **THEN** the workflow MUST follow the established checkout pattern with recursive submodules
+#### Scenario: Integration test workflow checks out submodules
+- **WHEN** the integration test workflow (`.github/workflows/integration-test.yml`) runs
+- **THEN** it MUST check out all submodules recursively
+- **AND** it MUST only build and execute tests from the `tests/integration/` suite
+

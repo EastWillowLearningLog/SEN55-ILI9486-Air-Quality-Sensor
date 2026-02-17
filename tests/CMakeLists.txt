@@ -72,11 +72,7 @@ endif()
 include(GoogleTest)
 
 # Build the Unit Test executable
-add_executable(emulator_test emulator_test.cpp)
-
-target_compile_definitions(emulator_test PRIVATE
-    TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/reference"
-)
+add_executable(emulator_test unit/emulator_test.cpp)
 
 # Link GTest and CoreLib
 target_link_libraries(emulator_test
@@ -85,7 +81,6 @@ target_link_libraries(emulator_test
 )
 
 # Register the unit test
-add_test(NAME EmulatorUnitTest COMMAND emulator_test)
 gtest_discover_tests(emulator_test)
 
 # Build the Integration Test executable

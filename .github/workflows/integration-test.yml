@@ -20,17 +20,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y cmake libsdl2-dev imagemagick xvfb
         
-    - name: Build
-      run: |
-        mkdir -p build
-        cd build
-        cmake ..
-        cmake --build . --target display_integration_test emulator_test
+    - name: Configure CMake (Standalone Tests)
+      run: cmake -B build_integration -S tests
+
+    - name: Build Integration Tests
+      run: cmake --build build_integration --target display_integration_test
         
-    - name: Run Tests
-      run: |
-        cd build
-        xvfb-run -a ctest --output-on-failure
+    - name: Run Integration Tests
+      working-directory: build_integration
+      run: xvfb-run -a ctest -R DisplayIntegrationTest --output-on-failure
         
     - name: Upload Artifacts on Failure
       if: failure()
@@ -38,5 +36,5 @@ jobs:
       with:
         name: test-artifacts
         path: |
-          build/actual_*.bmp
-          build/diff_*.bmp
+          build_integration/actual_*.bmp
+          build_integration/diff_*.bmp

@@ -13,3 +13,4 @@ Makefile
 .cache/
 compile_commands.json
 build_tests
+build_integration
