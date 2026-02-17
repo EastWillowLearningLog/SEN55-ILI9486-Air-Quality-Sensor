@@ -3,7 +3,10 @@
 ## Overview
 Visual regression testing for the DisplayEmulator through automated screenshot comparison. This capability validates UI rendering correctness by comparing emulator output against known-good reference images.
 
+**Context**: This capability is separate from the `emulator-split` smoke test. The smoke test (`emulator.yml`) validates execution only (can it run without crashing?). Visual regression testing (screenshot comparison) was intentionally removed from the smoke test suite and will be implemented here when reference images are available.
+
 ## ADDED Requirements
+
 
 ### Requirement: Checkpoint-Based Screenshot Capture
 The emulator must support programmatic control to capture screenshots at specific rendering checkpoints.

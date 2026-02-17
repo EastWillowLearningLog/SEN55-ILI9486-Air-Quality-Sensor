@@ -37,9 +37,8 @@ jobs:
           cd build
           xvfb-run ./DisplayEmulator --test
 
-      - name: Upload Screenshot (on failure)
-        if: failure()
+      - name: Upload Screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: emulator-screenshot-failed
+          name: emulator-screenshot
           path: build/screenshot.bmp

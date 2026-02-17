@@ -49,14 +49,19 @@ The emulator must have an automated CI workflow that validates basic execution.
 
 ---
 
-### Requirement: Screenshot Artifact Preservation
-Failed smoke tests must preserve debugging artifacts.
+### Requirement: Screenshot Artifact Capture
+Smoke tests must capture and preserve screenshots for inspection.
 
-#### Scenario: Debugging Failed Execution
-- **GIVEN** the emulator crashes or fails during smoke test
-- **WHEN** the CI workflow detects failure
-- **THEN** `screenshot.bmp` is uploaded as a GitHub Actions artifact
-- **AND** developers can download it to diagnose the issue
+#### Scenario: Screenshot Artifact Upload
+- **GIVEN** the emulator completes execution (success or failure)
+- **WHEN** the CI workflow completes
+- **THEN** `screenshot.bmp` is uploaded as a GitHub Actions artifact named `emulator-screenshot`
+- **AND** developers can download it to:
+  - Verify the emulator rendered something
+  - Inspect output for obvious rendering issues
+  - Use as reference when creating integration tests
+
+**Note**: This artifact is for **inspection only**, not automated validation. Visual regression testing will be handled by the `display-integration-test` capability.
 
 ---
 
@@ -86,6 +91,35 @@ Failed smoke tests must preserve debugging artifacts.
 3. Configure CMake: `cmake ..`
 4. Build: `cmake --build .`
 5. Run emulator test: `xvfb-run ./DisplayEmulator --test`
-6. Upload screenshot on failure
+6. Upload screenshot artifact (always, with name `emulator-screenshot`)
 
 **Success Criteria**: Exit code 0 from step 5
+
+**Artifacts**: `screenshot.bmp` uploaded for every run (inspection only, not validated)
+
+---
+
+## Local Development Workflow
+
+### Building and Running Locally
+
+```bash
+mkdir build
+cd build
+cmake ..
+cmake --build .
+./DisplayEmulator          # Interactive mode
+./DisplayEmulator --test   # Test mode (25 frames + screenshot)
+```
+
+### Testing CI Workflows Locally
+
+Using [GitHub Act](https://github.com/nektos/act):
+
+```bash
+gh extension install https://github.com/nektos/gh-act
+gh act push  # Simulates push event locally
+```
+
+This allows developers to test CI workflows without pushing to GitHub.
+
