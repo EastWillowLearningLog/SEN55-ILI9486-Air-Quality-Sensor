@@ -6,6 +6,74 @@
 [![Integration Tests](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/integration-test.yml/badge.svg)](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/integration-test.yml)
 [![WASM Build](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/wasm.yml/badge.svg)](https://github.com/eastwillowlearninglog/SEN55-ILI9486-Air-Quality-Sensor/actions/workflows/wasm.yml)
 
+## Main Goal
+
+I want to demonstrate the newest ai agent workflow can handle the embedded c++project.
+
+Now I have tested AI Agent Workflow:
+- [jules](https://jules.google/)
+- [antigravity](https://antigravity.google/)
+- [openspec](https://github.com/Fission-AI/OpenSpec)
+
+I want to propse a workflow that can handle the embedded c++project.
+
+1. Create the Emulator or the mock for the embedded c++project.
+2. Create the test for the embedded c++project.
+3. Use the Below Workflow to achieve the goal.
+
+## Project Goal
+
+The main goal of this project is to create a display emulator for the SEN55 air quality sensor using the ILI9486 driver.
+
+## My Company with AI Agent Workflow
+
+```mermaid
+flowchart LR
+    Start(1. Explore) --> CheckCov{"2. Tests?"}
+
+    CheckCov -- Yes --> Discuss[3. Discuss]
+    CheckCov -- No --> GenTest[2.a Gen Test] --> CommitTest[2.b Commit test] --> Start
+
+    Discuss --> CheckCtx{"4. Context?"}
+    
+    CheckCtx -- Yes --> GenCode
+    CheckCtx -- No --> TeachCtx[5. Teach]
+    
+    TeachCtx --> CheckCtx
+    GenCode --> Verify[7. Verify]
+    
+    Verify --> CheckOK{"8. OK?"}
+    
+    CheckOK -- Yes --> Commit((9. Commit))
+    CheckOK -- No --> TeachSpec[8.a Teach Spec] --> GenCode
+```
+
+* **1. Explore(`/opsx-explore` or `/opsx-new`)**
+Identify the scope of changes and requirements for the new feature.
+* **2. Check Tests Coverage**
+Determine if the proposed changes are covered by existing unit tests.
+  * Usually I will straight forward observe how the AI agent edit the code file.
+* **2.a Gen Test**
+Use the AI Agent to generate the necessary unit test code before implementation.
+* **2.b Commit Test**
+Use the AI Agent to commit the test code.
+* **3. Discuss(`/opsx-continue`)**
+Discuss the feature with the AI Agent to ensure it understands the requirements and logic.
+* **4. Check Context(`/opsx-continue`)**
+Assess if the AI Agent has sufficient project context to complete the task.
+* **5. Teach & Spec(`/opsx-continue`)**
+If context is lacking or verification failed, provide OpenSpec details or specific instructions to guide the AI.
+* **6. Gen Code(`/opsx-apply`)**
+Instruct the AI Agent to generate the implementation code for the new feature.
+* **7. Verify(`/opsx-verify`)**
+Review and verify the generated code and specifications against the requirements.
+* **9. Commit**
+  * Before commit i will use `/opsx-sync` to sync the spec and what i teach to local.
+  * Then I will use `/opsx-archive` to archive the spec and what i teach to local.
+  * Then I will use `git commit` to commit the code.
+
+## How to Run
+
 Local Run Command :
 
 ```bash
@@ -30,6 +98,8 @@ Software Bill of Materials:
 * ILI9486 Driver Form [3.5inch TFT Touch Shield](https://www.waveshare.com/wiki/3.5inch_TFT_Touch_Shield)
 * SEN55 Library From [arduino-i2c-sen5x](https://github.com/Sensirion/arduino-i2c-sen5x)
 * SEN55 Library Depency From [arduino-core](https://github.com/Sensirion/arduino-core)
+
+
 
 Acknowledging AI Usage:
 * Code assistance and debugging for the LCD driver and SEN55 implementation provided by Google's Gemini.
