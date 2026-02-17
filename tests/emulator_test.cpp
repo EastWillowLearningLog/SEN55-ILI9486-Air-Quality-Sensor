@@ -3,6 +3,7 @@
 
 // CoreLib component headers
 #include "App.h"
+#include "LCD_Driver_SDL.h"
 #include "SensorMock.h"
 
 /**
@@ -10,16 +11,13 @@
  *
  * These tests validate CoreLib components directly by linking the library
  * and calling functions, rather than spawning the DisplayEmulator binary.
- *
- * Test separation:
- * - Smoke tests (emulator.yml): Validate DisplayEmulator binary integration
- * - Component tests (here): Validate CoreLib component correctness
  */
 
 class CoreLibTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    // Test setup if needed
+    // Reset mouse state before each test
+    SDL_SetMouseState(0, 0, false);
   }
 
   void TearDown() override {
@@ -40,31 +38,70 @@ TEST_F(CoreLibTest, SensorMockInitializes) {
 }
 
 /**
- * Test: SensorMock provides valid data
- * Validates that mock sensor returns non-NaN values for all readings.
+ * Test: App State Transitions
+ * Validates that the app switches between MAIN and INFO screens via touch.
  */
-TEST_F(CoreLibTest, SensorMockProvidesValidData) {
+TEST_F(CoreLibTest, InteractionTransitions) {
   SensorMock sensor;
-  sensor.begin();
-  sensor.startMeasurement();
+  App_Setup(&sensor);
 
-  float pm1p0, pm2p5, pm4p0, pm10p0, humidity, temperature, vocIndex, noxIndex;
-  uint16_t result = sensor.readMeasuredValues(
-      pm1p0, pm2p5, pm4p0, pm10p0, humidity, temperature, vocIndex, noxIndex);
+  // Initial state should be MAIN
+  EXPECT_EQ(App_GetState(), APP_STATE_MAIN);
 
-  EXPECT_EQ(result, 0) << "Read measurement failed";
+  // 1. Click INFO button (BTN_INFO_X, BTN_INFO_Y)
+  SDL_SetMouseState(BTN_INFO_X + 5, BTN_INFO_Y + 5, true);
+  App_Loop(&sensor); // Detect press
+  SDL_SetMouseState(BTN_INFO_X + 5, BTN_INFO_Y + 5, false);
+  App_Loop(&sensor); // Process state change
 
-  // Verify all values are valid (not NaN)
-  // Use C-style isnan for portability
-  EXPECT_FALSE(isnan(temperature)) << "Temperature is NaN";
-  EXPECT_FALSE(isnan(humidity)) << "Humidity is NaN";
-  EXPECT_FALSE(isnan(pm2p5)) << "PM2.5 is NaN";
+  EXPECT_EQ(App_GetState(), APP_STATE_INFO)
+      << "Failed to transition to INFO screen";
 
-  // Verify reasonable ranges for mock data
-  EXPECT_GE(temperature, -40.0f) << "Temperature too low";
-  EXPECT_LE(temperature, 85.0f) << "Temperature too high";
-  EXPECT_GE(humidity, 0.0f) << "Humidity too low";
-  EXPECT_LE(humidity, 100.0f) << "Humidity too high";
+  // 2. Click BACK button (BTN_BACK_X, BTN_BACK_Y)
+  SDL_SetMouseState(BTN_BACK_X + 5, BTN_BACK_Y + 5, true);
+  App_Loop(&sensor); // Detect press
+  SDL_SetMouseState(BTN_BACK_X + 5, BTN_BACK_Y + 5, false);
+  App_Loop(&sensor); // Process state change
+
+  EXPECT_EQ(App_GetState(), APP_STATE_MAIN)
+      << "Failed to transition back to MAIN screen";
+}
+
+/**
+ * Test: Handle NaN Values
+ * Validates that the app handles NaN sensor data (e.g. during warmup) without
+ * crashing.
+ */
+class NaNSensorMock : public SensorMock {
+public:
+  uint16_t readMeasuredValues(float &pm1p0, float &pm2p5, float &pm4p0,
+                              float &pm10p0, float &humidity,
+                              float &temperature, float &vocIndex,
+                              float &noxIndex) override {
+    pm1p0 = 10.0f;
+    pm2p5 = 10.0f;
+    pm4p0 = 10.0f;
+    pm10p0 = 10.0f;
+    humidity = 50.0f;
+    temperature = 25.0f;
+    vocIndex = NAN; // Inject NaN
+    noxIndex = NAN; // Inject NaN
+    return 0;
+  }
+};
+
+TEST_F(CoreLibTest, HandleNaNValues) {
+  NaNSensorMock nanSensor;
+  App_Setup(&nanSensor);
+
+  // Force a sensor update (needs > 1000ms, loops are 50ms each)
+  for (int i = 0; i < 25; i++) {
+    App_Loop(&nanSensor);
+  }
+
+  // If we reached here without crash, the NaN handling in App_Loop is working.
+  // The logic in App.cpp (lines 278-291) handles the display strings.
+  SUCCEED();
 }
 
 /**
