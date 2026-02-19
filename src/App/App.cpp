@@ -189,6 +189,14 @@ void App_Loop(SensorIntf *sen5x) {
       // Check Info Button
       if (x >= BTN_INFO_X && x <= BTN_INFO_X + BTN_INFO_W && y >= BTN_INFO_Y &&
           y <= BTN_INFO_Y + BTN_INFO_H) {
+        // Visual Feedback
+        GUI_DrawRectangle(BTN_INFO_X, BTN_INFO_Y, BTN_INFO_X + BTN_INFO_W,
+                          BTN_INFO_Y + BTN_INFO_H, BLUE, DRAW_FULL,
+                          DOT_PIXEL_1X1);
+        GUI_DisString_EN(BTN_INFO_X + 10, BTN_INFO_Y + 8, "INFO", &Font16, BLUE,
+                         LCD_BACKGROUND);
+        Driver_Delay_ms(100);
+
         currentState = APP_STATE_INFO;
         DrawInfoScreen();
         Driver_Delay_ms(200); // Simple debounce
@@ -197,6 +205,14 @@ void App_Loop(SensorIntf *sen5x) {
       // Check Back Button
       if (x >= BTN_BACK_X && x <= BTN_BACK_X + BTN_BACK_W && y >= BTN_BACK_Y &&
           y <= BTN_BACK_Y + BTN_BACK_H) {
+        // Visual Feedback
+        GUI_DrawRectangle(BTN_BACK_X, BTN_BACK_Y, BTN_BACK_X + BTN_BACK_W,
+                          BTN_BACK_Y + BTN_BACK_H, BLUE, DRAW_FULL,
+                          DOT_PIXEL_1X1);
+        GUI_DisString_EN(BTN_BACK_X + 10, BTN_BACK_Y + 8, "BACK", &Font16, BLUE,
+                         LCD_BACKGROUND);
+        Driver_Delay_ms(100);
+
         currentState = APP_STATE_MAIN;
         DrawMainScreen();
         Driver_Delay_ms(200); // Simple debounce
