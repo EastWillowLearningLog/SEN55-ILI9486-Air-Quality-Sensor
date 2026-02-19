@@ -32,7 +32,24 @@ typedef enum {
 typedef struct SDL_Window SDL_Window;
 typedef struct SDL_Renderer SDL_Renderer;
 typedef struct SDL_Texture SDL_Texture;
-typedef struct SDL_Surface SDL_Surface;
+
+typedef struct SDL_PixelFormat {
+    uint32_t format;
+} SDL_PixelFormat;
+
+typedef struct SDL_Surface {
+    uint32_t flags;
+    SDL_PixelFormat *format;
+    int w, h;
+    int pitch;
+    void *pixels;
+    void *userdata;
+    int locked;
+    void *list_blitmap;
+    struct SDL_Rect *clip_rect;
+    struct SDL_BlitMap *map;
+    int refcount;
+} SDL_Surface;
 
 // Mouse Button Event Structure
 typedef struct SDL_MouseButtonEvent {
