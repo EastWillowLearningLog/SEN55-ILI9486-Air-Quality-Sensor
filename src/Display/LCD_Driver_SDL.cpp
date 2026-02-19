@@ -143,8 +143,18 @@ void LCD_Quit() {
 // Screenshot function for PC
 void LCD_SaveScreenshot(const char* filename) {
     SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(frameBuffer, WINDOW_WIDTH, WINDOW_HEIGHT, 16, WINDOW_WIDTH * 2, SDL_PIXELFORMAT_RGB565);
-    SDL_SaveBMP(surface, filename);
-    SDL_FreeSurface(surface);
+    if (surface) {
+        // Convert to standard RGB24 format for broader compatibility (especially with ImageMagick)
+        SDL_Surface* standardSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGB24, 0);
+        if (standardSurface) {
+            SDL_SaveBMP(standardSurface, filename);
+            SDL_FreeSurface(standardSurface);
+        } else {
+            // Fallback
+            SDL_SaveBMP(surface, filename);
+        }
+        SDL_FreeSurface(surface);
+    }
 }
 
 void SDL_SetMouseState(int x, int y, bool pressed) {
