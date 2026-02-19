@@ -24,7 +24,15 @@ enum AppState { APP_STATE_MAIN, APP_STATE_INFO, APP_STATE_CHART };
 #define BTN_CHART_H 30
 
 // Chart Configuration
+#ifdef ARDUINO
+// Reduce chart size for Arduino due to limited RAM (2KB)
+// 50 points * 4 bytes/float = 200 bytes
+// Original 200 points * 4 bytes/float = 800 bytes
+// This saves 600 bytes, bringing RAM usage safely under 2048 bytes
+#define CHART_MAX_POINTS 50
+#else
 #define CHART_MAX_POINTS 200
+#endif
 #define CHART_UPDATE_INTERVAL 5000
 
 struct SensorValues {
