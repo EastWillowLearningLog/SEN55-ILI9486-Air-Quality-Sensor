@@ -17,7 +17,28 @@ enum AppState { APP_STATE_MAIN, APP_STATE_INFO };
 #define BTN_BACK_W 70
 #define BTN_BACK_H 30
 
-void App_Setup(SensorIntf *sensor);
+class TimeProvider {
+public:
+  virtual unsigned long getMillis() = 0;
+  virtual ~TimeProvider() = default;
+};
+
+class SystemTimeProvider : public TimeProvider {
+public:
+  unsigned long getMillis() override;
+};
+
+class MockTimeProvider : public TimeProvider {
+private:
+  unsigned long current_time = 0;
+
+public:
+  unsigned long getMillis() override;
+  void advance(unsigned long ms);
+  void set(unsigned long ms);
+};
+
+void App_Setup(SensorIntf *sensor, TimeProvider *timeProvider);
 void App_Loop(SensorIntf *sensor);
 AppState App_GetState(void);
 void App_ResetState(void);

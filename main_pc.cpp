@@ -17,6 +17,7 @@
 
 // Global sensor instance
 SensorMock mockSensor;
+SystemTimeProvider sysTime;
 
 // Shared input handling logic for both Emscripten and Native
 void HandleInput(const SDL_Event &e) {
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Setup
-  App_Setup(&mockSensor);
+  App_Setup(&mockSensor, &sysTime);
 
 #ifdef __EMSCRIPTEN__
   // For the web, we set a persistent main loop

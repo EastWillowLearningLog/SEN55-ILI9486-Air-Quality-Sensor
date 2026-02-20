@@ -3,6 +3,7 @@
 
 #include "../Sensor/SensorIntf.h"
 
+#include "../App/App.h"
 #ifndef ARDUINO
 #include <string>
 
@@ -14,8 +15,8 @@ public:
   EmulatorEngine();
   ~EmulatorEngine();
 
-  // Initialize the emulator with a sensor interface
-  void initialize(SensorIntf *sensor);
+  // Initialize the emulator with a sensor interface and a time provider
+  void initialize(SensorIntf *sensor, TimeProvider *timeProvider);
 
   // Run the emulator for a specified number of frames
   // Each frame consists of App_Loop() and LCD_Update()

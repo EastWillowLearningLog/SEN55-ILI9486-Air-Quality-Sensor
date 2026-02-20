@@ -7,8 +7,6 @@
 #include "LCD_Driver_SDL.h"
 #include "SensorMock.h"
 
-extern unsigned long mockMillis;
-
 class DebouncePerformanceTest : public ::testing::Test {
 protected:
   void SetUp() override {
@@ -29,7 +27,8 @@ protected:
  */
 TEST_F(DebouncePerformanceTest, NonBlockingDebounce) {
   SensorMock sensor;
-  App_Setup(&sensor);
+  MockTimeProvider timeProvider;
+  App_Setup(&sensor, &timeProvider);
 
   // Initial state should be MAIN
   EXPECT_EQ(App_GetState(), APP_STATE_MAIN);
@@ -38,9 +37,12 @@ TEST_F(DebouncePerformanceTest, NonBlockingDebounce) {
   SDL_SetMouseState(BTN_INFO_X + 5, BTN_INFO_Y + 5, true);
 
   // Measure how many mockMillis pass during App_Loop
-  unsigned long startMillis = mockMillis;
+  unsigned long startMillis = timeProvider.getMillis();
   App_Loop(&sensor); // Should detect press and switch state
-  unsigned long elapsed = mockMillis - startMillis;
+  timeProvider.advance(
+      50); // Simulate the fact that App_Loop took some ms (although we removed
+           // the internal advance, we expect it to return fast)
+  unsigned long elapsed = timeProvider.getMillis() - startMillis;
 
   // The loop itself advances mockMillis by 50ms.
   // We expect it NOT to block for an extra 200ms.
@@ -59,7 +61,7 @@ TEST_F(DebouncePerformanceTest, NonBlockingDebounce) {
       << "State transitioned during debounce period";
 
   // Advance mockMillis to simulate time passing beyond debounce period
-  mockMillis += 200;
+  timeProvider.advance(200);
 
   // 3. Click BACK button again after debounce period
   App_Loop(&sensor);
@@ -74,13 +76,14 @@ TEST_F(DebouncePerformanceTest, NonBlockingDebounce) {
  */
 TEST_F(DebouncePerformanceTest, ClockRollover) {
   SensorMock sensor;
-  App_Setup(&sensor);
+  MockTimeProvider timeProvider;
+  App_Setup(&sensor, &timeProvider);
 
   // Set mockMillis near max unsigned long value to trigger a rollover
-  mockMillis = ULONG_MAX - 100;
+  timeProvider.set(ULONG_MAX - 100);
 
   // Let initial debounce period (-200 initialization) pass
-  mockMillis += 200;
+  timeProvider.advance(200);
 
   // 1. Click INFO button
   SDL_SetMouseState(BTN_INFO_X + 5, BTN_INFO_Y + 5, true);
@@ -92,14 +95,16 @@ TEST_F(DebouncePerformanceTest, ClockRollover) {
   SDL_SetMouseState(0, 0, false);
   App_Loop(&sensor);
 
-  // Now mockMillis will have rolled over:
-  // previous was ULONG_MAX - 50. Loop adds 50 -> mockMillis = ULONG_MAX
-  // next loop adds 50 -> mockMillis = 49 (rollover)
+  // Now mockMillis will have rolled over
+  timeProvider.advance(50);
   App_Loop(&sensor);
+  timeProvider.advance(50);
   App_Loop(&sensor);
+  timeProvider.advance(50);
   App_Loop(&sensor);
+  timeProvider.advance(50);
   App_Loop(&sensor);
-  // Total added: ~ 200ms, mockMillis should be around 149 now.
+  // Total added: ~ 200ms
 
   // The expression (currentMillis - lastTransitionTime) should correctly yield
   // ~200. 149 - (ULONG_MAX - 50) = 149 - (-51) = 200.

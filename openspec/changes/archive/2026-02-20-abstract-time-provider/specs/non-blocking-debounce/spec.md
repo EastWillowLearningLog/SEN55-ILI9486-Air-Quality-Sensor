@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Non-Blocking State Transitions
 The system SHALL use a timestamp-based, non-blocking check for button debouncing to prevent UI hangs, utilizing the injected `TimeProvider`.

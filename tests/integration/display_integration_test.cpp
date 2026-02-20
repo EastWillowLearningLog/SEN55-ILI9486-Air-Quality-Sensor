@@ -78,9 +78,10 @@ protected:
 
 TEST_F(DisplayIntegrationTest, CheckpointStartup) {
   SensorMock sensor;
+  SystemTimeProvider timeProvider;
   EmulatorEngine engine;
 
-  engine.initialize(&sensor);
+  engine.initialize(&sensor, &timeProvider);
 
   // Frame 0: Just initialized
   engine.captureScreenshot("actual_startup.bmp");
@@ -104,9 +105,10 @@ TEST_F(DisplayIntegrationTest, CheckpointStartup) {
 
 TEST_F(DisplayIntegrationTest, CheckpointFinal) {
   SensorMock sensor;
+  SystemTimeProvider timeProvider;
   EmulatorEngine engine;
 
-  engine.initialize(&sensor);
+  engine.initialize(&sensor, &timeProvider);
 
   // Run 25 frames
   engine.stepFrames(25);

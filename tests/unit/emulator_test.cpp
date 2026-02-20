@@ -43,7 +43,8 @@ TEST_F(CoreLibTest, SensorMockInitializes) {
  */
 TEST_F(CoreLibTest, InteractionTransitions) {
   SensorMock sensor;
-  App_Setup(&sensor);
+  MockTimeProvider timeProvider;
+  App_Setup(&sensor, &timeProvider);
 
   // Initial state should be MAIN
   EXPECT_EQ(App_GetState(), APP_STATE_MAIN);
@@ -58,10 +59,7 @@ TEST_F(CoreLibTest, InteractionTransitions) {
       << "Failed to transition to INFO screen";
 
   // Explicitly advance time past the 200ms debounce threshold
-  // Since each App_Loop advances by 50ms, 4 iterations = 200ms
-  for (int i = 0; i < 4; i++) {
-    App_Loop(&sensor);
-  }
+  timeProvider.advance(250);
 
   // 2. Click BACK button (BTN_BACK_X, BTN_BACK_Y)
   SDL_SetMouseState(BTN_BACK_X + 5, BTN_BACK_Y + 5, true);
@@ -98,12 +96,12 @@ public:
 
 TEST_F(CoreLibTest, HandleNaNValues) {
   NaNSensorMock nanSensor;
-  App_Setup(&nanSensor);
+  MockTimeProvider timeProvider;
+  App_Setup(&nanSensor, &timeProvider);
 
-  // Force a sensor update (needs > 1000ms, loops are 50ms each)
-  for (int i = 0; i < 25; i++) {
-    App_Loop(&nanSensor);
-  }
+  // Force a sensor update (needs > 1000ms)
+  timeProvider.advance(1050);
+  App_Loop(&nanSensor);
 
   // If we reached here without crash, the NaN handling in App_Loop is working.
   // The logic in App.cpp (lines 278-291) handles the display strings.
@@ -116,10 +114,11 @@ TEST_F(CoreLibTest, HandleNaNValues) {
  */
 TEST_F(CoreLibTest, AppSetupExecutes) {
   SensorMock sensor;
+  MockTimeProvider timeProvider;
   sensor.begin();
 
   // App_Setup should not crash when called with valid sensor
-  EXPECT_NO_THROW({ App_Setup(&sensor); })
+  EXPECT_NO_THROW({ App_Setup(&sensor, &timeProvider); })
       << "App_Setup threw exception or crashed";
 }
 

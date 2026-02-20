@@ -9,9 +9,10 @@
 EmulatorEngine::EmulatorEngine() {}
 EmulatorEngine::~EmulatorEngine() {}
 
-void EmulatorEngine::initialize(SensorIntf *sensor) {
+void EmulatorEngine::initialize(SensorIntf *sensor,
+                                TimeProvider *timeProvider) {
   m_sensor = sensor;
-  App_Setup(sensor);
+  App_Setup(sensor, timeProvider);
 }
 
 void EmulatorEngine::stepFrames(int count) {

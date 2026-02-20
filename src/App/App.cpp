@@ -18,18 +18,30 @@ using namespace std;
 static AppState currentState = APP_STATE_MAIN;
 static unsigned long lastSensorUpdate = 0;
 static unsigned long lastTransitionTime = (unsigned long)-200;
+static TimeProvider *appTime = nullptr;
 
-#ifndef ARDUINO
-unsigned long mockMillis = 0;
+unsigned long SystemTimeProvider::getMillis() {
+#ifdef ARDUINO
+  return millis();
+#else
+  // Default PC implementation or fallback
+  static unsigned long pcMillis = 0;
+  pcMillis += 50;
+  return pcMillis;
 #endif
+}
+
+unsigned long MockTimeProvider::getMillis() { return current_time; }
+
+void MockTimeProvider::advance(unsigned long ms) { current_time += ms; }
+
+void MockTimeProvider::set(unsigned long ms) { current_time = ms; }
 
 void App_ResetState() {
   currentState = APP_STATE_MAIN;
   lastSensorUpdate = 0;
   lastTransitionTime = (unsigned long)-200;
-#ifndef ARDUINO
-  mockMillis = 0;
-#endif
+  appTime = nullptr;
 }
 
 AppState App_GetState() { return currentState; }
@@ -104,7 +116,10 @@ void DrawInfoScreen() {
                    LCD_BACKGROUND, BLUE);
 }
 
-void App_Setup(SensorIntf *sen5x) {
+void App_Setup(SensorIntf *sen5x, TimeProvider *timeProvider) {
+  // Store the time provider
+  appTime = timeProvider;
+
   // 1. 初始化 LCD 底層系統 (包含 Serial)
   System_Init();
 
@@ -178,12 +193,9 @@ void App_Setup(SensorIntf *sen5x) {
 }
 
 void App_Loop(SensorIntf *sen5x) {
-  unsigned long currentMillis;
-#ifdef ARDUINO
-  currentMillis = millis();
-#else
-  mockMillis += 50; // Simulate 50ms per loop
-  currentMillis = mockMillis;
+  unsigned long currentMillis = appTime ? appTime->getMillis() : 0;
+
+#ifndef ARDUINO
   // Add small delay to avoid CPU hogging on PC
   Driver_Delay_ms(50);
 #endif
