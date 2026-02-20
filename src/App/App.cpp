@@ -103,6 +103,96 @@ static void displayValue(uint16_t x, uint16_t y, const char *label, float value,
   GUI_DisString_EN(valX, y, valStr, &Font20, LCD_BACKGROUND, color);
 }
 
+static void App_Log(const char* message) {
+#ifdef ARDUINO
+  Serial.println(message);
+#else
+  printf("%s\n", message);
+#endif
+}
+
+static void App_LogError(const char* context, const char* errorMsg) {
+#ifdef ARDUINO
+  Serial.print(context);
+  Serial.println(errorMsg);
+#else
+  printf("%s%s\n", context, errorMsg);
+#endif
+}
+
+static bool App_UpdateSensor(SensorIntf *sen5x, unsigned long currentMillis) {
+  if (currentState != APP_STATE_MAIN) {
+    return false;
+  }
+
+  if (currentMillis - lastSensorUpdate < 1000) {
+    return false;
+  }
+
+  lastSensorUpdate = currentMillis;
+  uint16_t error;
+  char errorMessage[256];
+
+  // 讀取測量值
+  float massConcentrationPm1p0;
+  float massConcentrationPm2p5;
+  float massConcentrationPm4p0;
+  float massConcentrationPm10p0;
+  float ambientHumidity;
+  float ambientTemperature;
+  float vocIndex;
+  float noxIndex;
+
+  error = sen5x->readMeasuredValues(
+      massConcentrationPm1p0, massConcentrationPm2p5, massConcentrationPm4p0,
+      massConcentrationPm10p0, ambientHumidity, ambientTemperature, vocIndex,
+      noxIndex);
+
+  if (error) {
+    sen5x->errorToString(error, errorMessage, 256);
+    App_LogError("Read Error: ", errorMessage);
+    GUI_DisString_EN(10, 300, "Read Error...", &Font16, LCD_BACKGROUND, RED);
+  } else {
+    // 如果讀取成功，更新 LCD 顯示
+
+    // --- PM 數值 ---
+    // PM 1.0
+    displayValue(10, 60, "PM 1.0:", massConcentrationPm1p0, " ug/m3", BLACK);
+    // PM 2.5 (使用紅色強調)
+    displayValue(10, 90, "PM 2.5:", massConcentrationPm2p5, " ug/m3", RED);
+    // PM 4.0
+    displayValue(10, 120, "PM 4.0:", massConcentrationPm4p0, " ug/m3", BLACK);
+    // PM 10.0
+    displayValue(10, 150, "PM 10 :", massConcentrationPm10p0, " ug/m3",
+                 BLACK);
+
+    // --- 環境數值 ---
+    // 溫度
+    displayValue(10, 180, "Temp  :", ambientTemperature, " C", BLUE);
+    // 濕度
+    displayValue(10, 210, "Humid :", ambientHumidity, " %", BLUE);
+
+    // --- 氣體指數 ---
+    // VOC
+    // 處理 NaN 狀況 (感測器預熱時可能是 NaN)
+    if (isnan(vocIndex)) {
+      GUI_DisString_EN(10, 240, "VOC Idx:   n/a", &Font20, LCD_BACKGROUND,
+                       BLACK);
+    } else {
+      displayValue(10, 240, "VOC Idx:", vocIndex, "", MAGENTA);
+    }
+
+    // NOx
+    if (isnan(noxIndex)) {
+      GUI_DisString_EN(10, 270, "NOx Idx:   n/a", &Font20, LCD_BACKGROUND,
+                       BLACK);
+    } else {
+      displayValue(10, 270, "NOx Idx:", noxIndex, "", MAGENTA);
+    }
+  }
+  return true;
+}
+
 void DrawMainScreen() {
   LCD_Clear(LCD_BACKGROUND);
   // 顯示標題
@@ -137,33 +227,20 @@ void App_Setup(SensorIntf *sen5x, TimeProvider *timeProvider) {
   // 1. 初始化 LCD 底層系統 (包含 Serial)
   System_Init();
 
-#ifdef ARDUINO
-  Serial.println("SEN55 Air Quality LCD Demo");
-  Serial.println("LCD Init...");
-#else
-  printf("SEN55 Air Quality LCD Demo\n");
-  printf("LCD Init...\n");
-#endif
+  App_Log("SEN55 Air Quality LCD Demo");
+  App_Log("LCD Init...");
 
   // 2. 初始化 LCD
   LCD_SCAN_DIR Lcd_ScanDir = SCAN_DIR_DFT;
   LCD_Init(Lcd_ScanDir, 100);
   TP_Init(Lcd_ScanDir);
 
-#ifdef ARDUINO
-  Serial.println("LCD Clear...");
-#else
-  printf("LCD Clear...\n");
-#endif
+  App_Log("LCD Clear...");
 
   DrawMainScreen();
 
   // 3. 初始化 SEN55
-#ifdef ARDUINO
-  Serial.println("Sensirion Init...");
-#else
-  printf("Sensirion Init...\n");
-#endif
+  App_Log("Sensirion Init...");
 
   // Note: Wire.begin() is handled inside SensorReal::begin() for Arduino
   // For PC, SensorMock::begin() does nothing.
@@ -173,15 +250,8 @@ void App_Setup(SensorIntf *sen5x, TimeProvider *timeProvider) {
 
   error = sen5x->deviceReset();
   if (error) {
-#ifdef ARDUINO
-    Serial.print("Device Reset Error: ");
-#endif
     sen5x->errorToString(error, errorMessage, 256);
-#ifdef ARDUINO
-    Serial.println(errorMessage);
-#else
-    printf("Device Reset Error: %s\n", errorMessage);
-#endif
+    App_LogError("Device Reset Error: ", errorMessage);
     GUI_DisString_EN(10, 60, "Sensor Reset Error", &Font20, LCD_BACKGROUND,
                      RED);
   }
@@ -193,15 +263,8 @@ void App_Setup(SensorIntf *sen5x, TimeProvider *timeProvider) {
   // 開始測量
   error = sen5x->startMeasurement();
   if (error) {
-#ifdef ARDUINO
-    Serial.print("Start Measurement Error: ");
-#endif
     sen5x->errorToString(error, errorMessage, 256);
-#ifdef ARDUINO
-    Serial.println(errorMessage);
-#else
-    printf("Start Measurement Error: %s\n", errorMessage);
-#endif
+    App_LogError("Start Measurement Error: ", errorMessage);
     GUI_DisString_EN(10, 90, "Start Error", &Font20, LCD_BACKGROUND, RED);
   }
 }
@@ -260,78 +323,9 @@ void App_Loop(SensorIntf *sen5x) {
   }
 
   // --- Update Sensor Data (Only in MAIN State, Every 1000ms) ---
+  bool updated = App_UpdateSensor(sen5x, currentMillis);
 
-  if (currentState == APP_STATE_MAIN &&
-      (currentMillis - lastSensorUpdate >= 1000)) {
-    lastSensorUpdate = currentMillis;
-    uint16_t error;
-    char errorMessage[256];
-
-    // 讀取測量值
-    float massConcentrationPm1p0;
-    float massConcentrationPm2p5;
-    float massConcentrationPm4p0;
-    float massConcentrationPm10p0;
-    float ambientHumidity;
-    float ambientTemperature;
-    float vocIndex;
-    float noxIndex;
-
-    error = sen5x->readMeasuredValues(
-        massConcentrationPm1p0, massConcentrationPm2p5, massConcentrationPm4p0,
-        massConcentrationPm10p0, ambientHumidity, ambientTemperature, vocIndex,
-        noxIndex);
-
-    if (error) {
-#ifdef ARDUINO
-      Serial.print("Read Error: ");
-#endif
-      sen5x->errorToString(error, errorMessage, 256);
-#ifdef ARDUINO
-      Serial.println(errorMessage);
-#else
-      printf("Read Error: %s\n", errorMessage);
-#endif
-      GUI_DisString_EN(10, 300, "Read Error...", &Font16, LCD_BACKGROUND, RED);
-    } else {
-      // 如果讀取成功，更新 LCD 顯示
-
-      // --- PM 數值 ---
-      // PM 1.0
-      displayValue(10, 60, "PM 1.0:", massConcentrationPm1p0, " ug/m3", BLACK);
-      // PM 2.5 (使用紅色強調)
-      displayValue(10, 90, "PM 2.5:", massConcentrationPm2p5, " ug/m3", RED);
-      // PM 4.0
-      displayValue(10, 120, "PM 4.0:", massConcentrationPm4p0, " ug/m3", BLACK);
-      // PM 10.0
-      displayValue(10, 150, "PM 10 :", massConcentrationPm10p0, " ug/m3",
-                   BLACK);
-
-      // --- 環境數值 ---
-      // 溫度
-      displayValue(10, 180, "Temp  :", ambientTemperature, " C", BLUE);
-      // 濕度
-      displayValue(10, 210, "Humid :", ambientHumidity, " %", BLUE);
-
-      // --- 氣體指數 ---
-      // VOC
-      // 處理 NaN 狀況 (感測器預熱時可能是 NaN)
-      if (isnan(vocIndex)) {
-        GUI_DisString_EN(10, 240, "VOC Idx:   n/a", &Font20, LCD_BACKGROUND,
-                         BLACK);
-      } else {
-        displayValue(10, 240, "VOC Idx:", vocIndex, "", MAGENTA);
-      }
-
-      // NOx
-      if (isnan(noxIndex)) {
-        GUI_DisString_EN(10, 270, "NOx Idx:   n/a", &Font20, LCD_BACKGROUND,
-                         BLACK);
-      } else {
-        displayValue(10, 270, "NOx Idx:", noxIndex, "", MAGENTA);
-      }
-    }
-  } else {
+  if (!updated) {
     // In Info state, we just wait for touch events.
     // Reduce delay to improve responsiveness and match emulator timing better.
     // On Arduino, a shorter delay (e.g. 10ms) suffices to yield.
