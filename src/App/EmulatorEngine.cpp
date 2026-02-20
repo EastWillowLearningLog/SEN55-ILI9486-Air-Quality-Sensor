@@ -27,4 +27,8 @@ void EmulatorEngine::captureScreenshot(const std::string &path) {
 
 void EmulatorEngine::shutdown() { LCD_Quit(); }
 
+void EmulatorEngine::setMouseState(int x, int y, bool pressed) {
+    SDL_SetMouseState(x, y, pressed);
+}
+
 #endif

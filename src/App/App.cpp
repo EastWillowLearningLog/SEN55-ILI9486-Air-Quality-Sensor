@@ -28,6 +28,18 @@ static AppState currentState = APP_STATE_MAIN;
 
 AppState App_GetState() { return currentState; }
 
+// Chart Data
+static uint16_t chartData[CHART_MAX_POINTS];
+static int chartCount = 0;
+
+static unsigned long lastSensorUpdate = 0;
+static unsigned long lastChartUpdate = 0;
+
+void App_ResetChartData() {
+  chartCount = 0;
+  memset(chartData, 0, sizeof(chartData));
+}
+
 // 用於顯示數值的緩衝區
 static char buf[30];
 
@@ -79,6 +91,68 @@ void DrawMainScreen() {
                     BTN_INFO_Y + BTN_INFO_H, BLUE, DRAW_EMPTY, DOT_PIXEL_1X1);
   GUI_DisString_EN(BTN_INFO_X + 10, BTN_INFO_Y + 8, "INFO", &Font16,
                    LCD_BACKGROUND, BLUE);
+
+  // Draw Trend Button
+  GUI_DrawRectangle(BTN_TREND_X, BTN_TREND_Y, BTN_TREND_X + BTN_TREND_W,
+                    BTN_TREND_Y + BTN_TREND_H, BLUE, DRAW_EMPTY, DOT_PIXEL_1X1);
+  GUI_DisString_EN(BTN_TREND_X + 10, BTN_TREND_Y + 8, "TREND", &Font16,
+                   LCD_BACKGROUND, BLUE);
+}
+
+void DrawChartScreen() {
+  LCD_Clear(LCD_BACKGROUND);
+
+  GUI_DisString_EN(10, 10, "PM2.5 Trend", &Font24, LCD_BACKGROUND, BLUE);
+  // Draw Back Button
+  GUI_DrawRectangle(BTN_BACK_X, BTN_BACK_Y, BTN_BACK_X + BTN_BACK_W,
+                    BTN_BACK_Y + BTN_BACK_H, BLUE, DRAW_EMPTY, DOT_PIXEL_1X1);
+  GUI_DisString_EN(BTN_BACK_X + 10, BTN_BACK_Y + 8, "BACK", &Font16,
+                   LCD_BACKGROUND, BLUE);
+
+  // Define Chart Area
+  uint16_t chartX = 40;
+  uint16_t chartY = 50;
+  uint16_t chartW = 430; // 480 - 40 - 10
+  uint16_t chartH = 200; // Leave space for buttons
+
+  // Draw Axes
+  GUI_DrawLine(chartX, chartY, chartX, chartY + chartH, BLACK, LINE_SOLID, DOT_PIXEL_1X1); // Y-axis
+  GUI_DrawLine(chartX, chartY + chartH, chartX + chartW, chartY + chartH, BLACK, LINE_SOLID, DOT_PIXEL_1X1); // X-axis
+
+  if (chartCount < 2) return;
+
+  // Find Max Value for Scaling
+  uint16_t maxVal = 10; // Minimum scale
+  for (int i = 0; i < chartCount; i++) {
+    if (chartData[i] > maxVal) maxVal = chartData[i];
+  }
+
+  // Draw Data
+  // Step size on X axis
+  // If we want to fill width, step = chartW / (CHART_MAX_POINTS - 1)
+  // Or just chartW / chartCount? User said "Historical data should be visible on the screen Only"
+  // Assuming strict 10s interval, we can just plot what we have from left to right.
+  // Or scroll?
+  // "store data in a shift-left mechanism" (from memory) -> likely the newest is at the end.
+  // Let's draw from left to right.
+
+  float stepX = (float)chartW / (CHART_MAX_POINTS > 1 ? (CHART_MAX_POINTS - 1) : 1);
+
+  uint16_t prevX = chartX;
+  uint16_t prevY = chartY + chartH - (uint16_t)((float)chartData[0] / maxVal * chartH);
+
+  for (int i = 1; i < chartCount; i++) {
+    uint16_t curX = chartX + (uint16_t)(i * stepX);
+    uint16_t curY = chartY + chartH - (uint16_t)((float)chartData[i] / maxVal * chartH);
+
+    // Clamp
+    if (curY < chartY) curY = chartY;
+    if (curY > chartY + chartH) curY = chartY + chartH;
+
+    GUI_DrawLine(prevX, prevY, curX, curY, RED, LINE_SOLID, DOT_PIXEL_1X1);
+    prevX = curX;
+    prevY = curY;
+  }
 }
 
 void DrawInfoScreen() {
@@ -102,6 +176,12 @@ void DrawInfoScreen() {
 }
 
 void App_Setup(SensorIntf *sen5x) {
+  // Reset internal state
+  App_ResetChartData();
+  currentState = APP_STATE_MAIN;
+  lastSensorUpdate = 0;
+  lastChartUpdate = 0;
+
   // 1. 初始化 LCD 底層系統 (包含 Serial)
   System_Init();
 
@@ -174,8 +254,6 @@ void App_Setup(SensorIntf *sen5x) {
   }
 }
 
-static unsigned long lastSensorUpdate = 0;
-
 void App_Loop(SensorIntf *sen5x) {
   // --- Touch Handling ---
   unsigned char touchState = TP_Scan(0);
@@ -193,7 +271,22 @@ void App_Loop(SensorIntf *sen5x) {
         DrawInfoScreen();
         Driver_Delay_ms(200); // Simple debounce
       }
+      // Check Trend Button
+      else if (x >= BTN_TREND_X && x <= BTN_TREND_X + BTN_TREND_W && y >= BTN_TREND_Y &&
+               y <= BTN_TREND_Y + BTN_TREND_H) {
+        currentState = APP_STATE_CHART;
+        DrawChartScreen();
+        Driver_Delay_ms(200);
+      }
     } else if (currentState == APP_STATE_INFO) {
+      // Check Back Button
+      if (x >= BTN_BACK_X && x <= BTN_BACK_X + BTN_BACK_W && y >= BTN_BACK_Y &&
+          y <= BTN_BACK_Y + BTN_BACK_H) {
+        currentState = APP_STATE_MAIN;
+        DrawMainScreen();
+        Driver_Delay_ms(200); // Simple debounce
+      }
+    } else if (currentState == APP_STATE_CHART) {
       // Check Back Button
       if (x >= BTN_BACK_X && x <= BTN_BACK_X + BTN_BACK_W && y >= BTN_BACK_Y &&
           y <= BTN_BACK_Y + BTN_BACK_H) {
@@ -204,7 +297,7 @@ void App_Loop(SensorIntf *sen5x) {
     }
   }
 
-  // --- Update Sensor Data (Only in MAIN State, Every 1000ms) ---
+  // --- Time Management ---
   unsigned long currentMillis;
 #ifdef ARDUINO
   currentMillis = millis();
@@ -217,6 +310,31 @@ void App_Loop(SensorIntf *sen5x) {
   Driver_Delay_ms(50);
 #endif
 
+  // --- Update Chart Data (Every 10000ms, regardless of state) ---
+  if (currentMillis - lastChartUpdate >= 10000) {
+    lastChartUpdate = currentMillis;
+
+    float p1, p2, p4, p10, h, t, voc, nox;
+    if (sen5x->readMeasuredValues(p1, p2, p4, p10, h, t, voc, nox) == 0) {
+      // Add to chart data (PM2.5)
+      if (chartCount < CHART_MAX_POINTS) {
+        chartData[chartCount++] = (uint16_t)p2;
+      } else {
+        // Shift left
+        for (int i = 0; i < CHART_MAX_POINTS - 1; i++) {
+          chartData[i] = chartData[i + 1];
+        }
+        chartData[CHART_MAX_POINTS - 1] = (uint16_t)p2;
+      }
+
+      // If currently viewing chart, redraw to show update
+      if (currentState == APP_STATE_CHART) {
+        DrawChartScreen();
+      }
+    }
+  }
+
+  // --- Update Sensor Data (Only in MAIN State, Every 1000ms) ---
   if (currentState == APP_STATE_MAIN &&
       (currentMillis - lastSensorUpdate >= 1000)) {
     lastSensorUpdate = currentMillis;

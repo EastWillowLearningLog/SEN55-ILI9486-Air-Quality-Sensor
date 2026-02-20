@@ -129,3 +129,42 @@ TEST_F(DisplayIntegrationTest, CheckpointFinal) {
 
   engine.shutdown();
 }
+
+TEST_F(DisplayIntegrationTest, CheckpointChart) {
+  SensorMock sensor;
+  EmulatorEngine engine;
+
+  engine.initialize(&sensor);
+
+  // 1. Initial State (Main Screen)
+  engine.stepFrames(5);
+
+  // 2. Click Trend Button (X=320, Y=10, W=70, H=30) -> Center around (355, 25)
+  // Need to simulate press and release
+  engine.setMouseState(355, 25, true);
+  engine.stepFrames(1);
+  engine.setMouseState(355, 25, false);
+  engine.stepFrames(5); // Debounce
+
+  // 3. Wait for data collection (12.5 seconds = 250 frames)
+  // This will trigger at least one 10s update.
+  engine.stepFrames(250);
+
+  engine.captureScreenshot("actual_chart.bmp");
+
+  int diff = CompareWithReference("actual_chart.bmp", "chart.bmp");
+
+  if (diff == -2) {
+    std::cout << "[WARNING] Reference missing. Generated actual_chart.bmp."
+              << std::endl;
+    FAIL() << "Reference image missing: chart.bmp. Generated actual_chart.bmp "
+              "for manual inspection.";
+  } else if (diff == -1) {
+    FAIL() << "ImageMagick comparison failed. Is 'compare' tool installed?";
+  } else {
+    ASSERT_LE(diff, 0) << "Chart screen mismatch! See diff_chart.bmp (" << diff
+                       << " pixels differ)";
+  }
+
+  engine.shutdown();
+}

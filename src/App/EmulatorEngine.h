@@ -26,6 +26,9 @@ public:
 
   // Clean up resources
   void shutdown();
+
+  // Simulate mouse input
+  void setMouseState(int x, int y, bool pressed);
 };
 
 #endif
