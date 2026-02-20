@@ -22,23 +22,6 @@ LCD_DIS sLCD_DIS = {LCD_WIDTH, LCD_HEIGHT, SCAN_DIR_DFT, 0, 0};
 #define WINDOW_WIDTH  LCD_WIDTH
 #define WINDOW_HEIGHT LCD_HEIGHT
 
-// Helper to convert RGB565 to RGB888 for SDL
-// RGB565: RRRRRGGG GGGBBBBB
-// RGB888: RRRRRRRR GGGGGGGG BBBBBBBB
-void RGB565_To_RGB888(uint16_t color, uint8_t* r, uint8_t* g, uint8_t* b) {
-    *r = (color & 0xF800) >> 8; // Top 5 bits
-    *g = (color & 0x07E0) >> 3; // Middle 6 bits
-    *b = (color & 0x001F) << 3; // Bottom 5 bits
-    // Scale up to full 8-bit range (simple shift leaves gaps, but enough for testing)
-    *r |= (*r >> 5);
-    *g |= (*g >> 6);
-    *b |= (*b >> 5);
-}
-
-// Convert RGB888 to RGB565 (if needed)
-uint16_t RGB888_To_RGB565(uint8_t r, uint8_t g, uint8_t b) {
-    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
-}
 
 
 void LCD_Init(LCD_SCAN_DIR LCD_ScanDir, uint16_t LCD_BLval) {
