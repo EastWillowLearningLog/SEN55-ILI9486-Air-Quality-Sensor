@@ -68,6 +68,19 @@ static void displayValue(uint16_t x, uint16_t y, const char *label, float value,
   GUI_DisString_EN(valX, y, valStr, &Font20, LCD_BACKGROUND, color);
 }
 
+static void DrawButton(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
+                       const char *label, bool isPressed) {
+  if (isPressed) {
+    // Pressed: Blue background, White text
+    GUI_DrawRectangle(x, y, x + w, y + h, BLUE, DRAW_FULL, DOT_PIXEL_1X1);
+    GUI_DisString_EN(x + 10, y + 8, label, &Font16, BLUE, LCD_BACKGROUND);
+  } else {
+    // Normal: White background, Blue border/text
+    GUI_DrawRectangle(x, y, x + w, y + h, BLUE, DRAW_EMPTY, DOT_PIXEL_1X1);
+    GUI_DisString_EN(x + 10, y + 8, label, &Font16, LCD_BACKGROUND, BLUE);
+  }
+}
+
 void DrawMainScreen() {
   LCD_Clear(LCD_BACKGROUND);
   // 顯示標題
@@ -75,10 +88,7 @@ void DrawMainScreen() {
   GUI_DrawLine(0, 40, 480, 40, BLUE, LINE_SOLID, DOT_PIXEL_2X2);
 
   // Draw Info Button
-  GUI_DrawRectangle(BTN_INFO_X, BTN_INFO_Y, BTN_INFO_X + BTN_INFO_W,
-                    BTN_INFO_Y + BTN_INFO_H, BLUE, DRAW_EMPTY, DOT_PIXEL_1X1);
-  GUI_DisString_EN(BTN_INFO_X + 10, BTN_INFO_Y + 8, "INFO", &Font16,
-                   LCD_BACKGROUND, BLUE);
+  DrawButton(BTN_INFO_X, BTN_INFO_Y, BTN_INFO_W, BTN_INFO_H, "INFO", false);
 }
 
 void DrawInfoScreen() {
@@ -95,10 +105,7 @@ void DrawInfoScreen() {
   GUI_DisString_EN(10, 140, "MIT License", &Font16, LCD_BACKGROUND, BLACK);
 
   // Draw Back Button
-  GUI_DrawRectangle(BTN_BACK_X, BTN_BACK_Y, BTN_BACK_X + BTN_BACK_W,
-                    BTN_BACK_Y + BTN_BACK_H, BLUE, DRAW_EMPTY, DOT_PIXEL_1X1);
-  GUI_DisString_EN(BTN_BACK_X + 10, BTN_BACK_Y + 8, "BACK", &Font16,
-                   LCD_BACKGROUND, BLUE);
+  DrawButton(BTN_BACK_X, BTN_BACK_Y, BTN_BACK_W, BTN_BACK_H, "BACK", false);
 }
 
 void App_Setup(SensorIntf *sen5x) {
@@ -189,6 +196,11 @@ void App_Loop(SensorIntf *sen5x) {
       // Check Info Button
       if (x >= BTN_INFO_X && x <= BTN_INFO_X + BTN_INFO_W && y >= BTN_INFO_Y &&
           y <= BTN_INFO_Y + BTN_INFO_H) {
+        // Visual Feedback
+        DrawButton(BTN_INFO_X, BTN_INFO_Y, BTN_INFO_W, BTN_INFO_H, "INFO",
+                   true);
+        Driver_Delay_ms(100);
+
         currentState = APP_STATE_INFO;
         DrawInfoScreen();
         Driver_Delay_ms(200); // Simple debounce
@@ -197,6 +209,11 @@ void App_Loop(SensorIntf *sen5x) {
       // Check Back Button
       if (x >= BTN_BACK_X && x <= BTN_BACK_X + BTN_BACK_W && y >= BTN_BACK_Y &&
           y <= BTN_BACK_Y + BTN_BACK_H) {
+        // Visual Feedback
+        DrawButton(BTN_BACK_X, BTN_BACK_Y, BTN_BACK_W, BTN_BACK_H, "BACK",
+                   true);
+        Driver_Delay_ms(100);
+
         currentState = APP_STATE_MAIN;
         DrawMainScreen();
         Driver_Delay_ms(200); // Simple debounce
