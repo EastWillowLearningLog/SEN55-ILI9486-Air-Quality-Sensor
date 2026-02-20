@@ -9,6 +9,7 @@
 #define SDL_WINDOW_SHOWN 0
 #define SDL_RENDERER_ACCELERATED 0
 #define SDL_PIXELFORMAT_RGB565 0
+#define SDL_PIXELFORMAT_RGB24 1
 #define SDL_TEXTUREACCESS_STREAMING 0
 #define SDL_QUIT 0x100
 
@@ -82,6 +83,7 @@ void SDL_Quit(void);
 int SDL_PollEvent(SDL_Event* event);
 void SDL_Delay(uint32_t ms);
 SDL_Surface* SDL_CreateRGBSurfaceWithFormatFrom(void* pixels, int width, int height, int depth, int pitch, uint32_t format);
+SDL_Surface* SDL_ConvertSurfaceFormat(SDL_Surface* src, uint32_t pixel_format, uint32_t flags);
 int SDL_SaveBMP(SDL_Surface* surface, const char* file);
 void SDL_FreeSurface(SDL_Surface* surface);
 SDL_bool SDL_SetHint(const char* name, const char* value);

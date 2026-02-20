@@ -152,7 +152,19 @@ void LCD_Quit() {
 // Screenshot function for PC
 void LCD_SaveScreenshot(const char* filename) {
     SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(frameBuffer, WINDOW_WIDTH, WINDOW_HEIGHT, 16, WINDOW_WIDTH * 2, SDL_PIXELFORMAT_RGB565);
-    SDL_SaveBMP(surface, filename);
+
+    // Convert to RGB24 (RGB888) format to ensure standard BMP compatibility (especially for ImageMagick/CI)
+    SDL_Surface* convertedSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGB24, 0);
+
+    if (convertedSurface) {
+        SDL_SaveBMP(convertedSurface, filename);
+        SDL_FreeSurface(convertedSurface);
+    } else {
+        // Fallback if conversion fails (though unlikely)
+        fprintf(stderr, "Surface conversion failed! saving original. SDL_Error: %s\n", SDL_GetError());
+        SDL_SaveBMP(surface, filename);
+    }
+
     SDL_FreeSurface(surface);
 }
 

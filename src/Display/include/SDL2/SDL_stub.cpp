@@ -27,4 +27,12 @@ int SDL_SaveBMP(SDL_Surface* surface, const char* file) {
 }
 void SDL_FreeSurface(SDL_Surface* surface) {}
 SDL_bool SDL_SetHint(const char* name, const char* value) { return SDL_TRUE; }
+
+// Mock for SDL_ConvertSurfaceFormat
+SDL_Surface* SDL_ConvertSurfaceFormat(SDL_Surface* src, uint32_t pixel_format, uint32_t flags) {
+    // Just return the src as if it worked, or a new dummy pointer
+    // Since we don't access the surface structure in the mock, pointer arithmetic is not an issue
+    // But we must ensure it's not NULL to avoid error print
+    return (SDL_Surface*)2;
+}
 }
