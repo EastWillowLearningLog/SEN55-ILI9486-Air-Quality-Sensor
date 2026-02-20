@@ -25,6 +25,21 @@ using namespace std;
 
 // Application State
 static AppState currentState = APP_STATE_MAIN;
+static unsigned long lastSensorUpdate = 0;
+static unsigned long lastTransitionTime = (unsigned long)-200;
+
+#ifndef ARDUINO
+unsigned long mockMillis = 0;
+#endif
+
+void App_ResetState() {
+  currentState = APP_STATE_MAIN;
+  lastSensorUpdate = 0;
+  lastTransitionTime = (unsigned long)-200;
+#ifndef ARDUINO
+  mockMillis = 0;
+#endif
+}
 
 AppState App_GetState() { return currentState; }
 
@@ -174,9 +189,17 @@ void App_Setup(SensorIntf *sen5x) {
   }
 }
 
-static unsigned long lastSensorUpdate = 0;
-
 void App_Loop(SensorIntf *sen5x) {
+  unsigned long currentMillis;
+#ifdef ARDUINO
+  currentMillis = millis();
+#else
+  mockMillis += 50; // Simulate 50ms per loop
+  currentMillis = mockMillis;
+  // Add small delay to avoid CPU hogging on PC
+  Driver_Delay_ms(50);
+#endif
+
   // --- Touch Handling ---
   unsigned char touchState = TP_Scan(0);
   uint16_t x = 0, y = 0;
@@ -185,37 +208,28 @@ void App_Loop(SensorIntf *sen5x) {
     TP_GetXY(&x, &y);
 
     // Debounce / State Transition
-    if (currentState == APP_STATE_MAIN) {
-      // Check Info Button
-      if (x >= BTN_INFO_X && x <= BTN_INFO_X + BTN_INFO_W && y >= BTN_INFO_Y &&
-          y <= BTN_INFO_Y + BTN_INFO_H) {
-        currentState = APP_STATE_INFO;
-        DrawInfoScreen();
-        Driver_Delay_ms(200); // Simple debounce
-      }
-    } else if (currentState == APP_STATE_INFO) {
-      // Check Back Button
-      if (x >= BTN_BACK_X && x <= BTN_BACK_X + BTN_BACK_W && y >= BTN_BACK_Y &&
-          y <= BTN_BACK_Y + BTN_BACK_H) {
-        currentState = APP_STATE_MAIN;
-        DrawMainScreen();
-        Driver_Delay_ms(200); // Simple debounce
+    if (currentMillis - lastTransitionTime >= 200) {
+      if (currentState == APP_STATE_MAIN) {
+        // Check Info Button
+        if (x >= BTN_INFO_X && x <= BTN_INFO_X + BTN_INFO_W &&
+            y >= BTN_INFO_Y && y <= BTN_INFO_Y + BTN_INFO_H) {
+          currentState = APP_STATE_INFO;
+          DrawInfoScreen();
+          lastTransitionTime = currentMillis;
+        }
+      } else if (currentState == APP_STATE_INFO) {
+        // Check Back Button
+        if (x >= BTN_BACK_X && x <= BTN_BACK_X + BTN_BACK_W &&
+            y >= BTN_BACK_Y && y <= BTN_BACK_Y + BTN_BACK_H) {
+          currentState = APP_STATE_MAIN;
+          DrawMainScreen();
+          lastTransitionTime = currentMillis;
+        }
       }
     }
   }
 
   // --- Update Sensor Data (Only in MAIN State, Every 1000ms) ---
-  unsigned long currentMillis;
-#ifdef ARDUINO
-  currentMillis = millis();
-#else
-  // Mock millis or just increment logic
-  static unsigned long mockMillis = 0;
-  mockMillis += 50; // Simulate 50ms per loop
-  currentMillis = mockMillis;
-  // Add small delay to avoid CPU hogging on PC
-  Driver_Delay_ms(50);
-#endif
 
   if (currentState == APP_STATE_MAIN &&
       (currentMillis - lastSensorUpdate >= 1000)) {
@@ -291,7 +305,8 @@ void App_Loop(SensorIntf *sen5x) {
     // In Info state, we just wait for touch events.
     // Reduce delay to improve responsiveness and match emulator timing better.
     // On Arduino, a shorter delay (e.g. 10ms) suffices to yield.
-    // On PC, the main loop already has a 50ms delay/pacing, so we don't need much here.
+    // On PC, the main loop already has a 50ms delay/pacing, so we don't need
+    // much here.
     Driver_Delay_ms(10);
   }
 }

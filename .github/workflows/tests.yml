@@ -31,7 +31,7 @@ jobs:
 
     - name: Run Unit Tests
       working-directory: build_tests
-      run: xvfb-run ctest -R "CoreLibTest|GUITest" --output-on-failure --output-junit testReport.xml
+      run: xvfb-run ctest -R "CoreLibTest|GUITest|DebouncePerformanceTest" --output-on-failure --output-junit testReport.xml
 
     - name: Test Report
       uses: EnricoMi/publish-unit-test-result-action/linux@v2

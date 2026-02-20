@@ -57,6 +57,12 @@ TEST_F(CoreLibTest, InteractionTransitions) {
   EXPECT_EQ(App_GetState(), APP_STATE_INFO)
       << "Failed to transition to INFO screen";
 
+  // Explicitly advance time past the 200ms debounce threshold
+  // Since each App_Loop advances by 50ms, 4 iterations = 200ms
+  for (int i = 0; i < 4; i++) {
+    App_Loop(&sensor);
+  }
+
   // 2. Click BACK button (BTN_BACK_X, BTN_BACK_Y)
   SDL_SetMouseState(BTN_BACK_X + 5, BTN_BACK_Y + 5, true);
   App_Loop(&sensor); // Detect press
