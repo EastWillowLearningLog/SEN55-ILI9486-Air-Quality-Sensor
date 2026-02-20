@@ -18,11 +18,30 @@ void SDL_Quit(void) {}
 int SDL_PollEvent(SDL_Event* event) { return 0; }
 void SDL_Delay(uint32_t ms) {}
 SDL_Surface* SDL_CreateRGBSurfaceWithFormatFrom(void* pixels, int width, int height, int depth, int pitch, uint32_t format) { return (SDL_Surface*)1; }
+SDL_Surface* SDL_ConvertSurfaceFormat(SDL_Surface* src, uint32_t pixel_format, uint32_t flags) { return (SDL_Surface*)1; }
 int SDL_SaveBMP(SDL_Surface* surface, const char* file) {
     printf("Mock SDL_SaveBMP to %s\n", file);
-    // Create a dummy file
-    FILE* f = fopen(file, "w");
-    if (f) { fprintf(f, "BMP"); fclose(f); }
+    // Create a valid dummy BMP file (minimal header)
+    FILE* f = fopen(file, "wb");
+    if (f) {
+        // BMP Header (14 bytes)
+        unsigned char bmpfileheader[14] = {'B','M', 0,0,0,0, 0,0, 0,0, 54,0,0,0};
+        unsigned int filesize = 54 + 3; // minimal size
+        bmpfileheader[2] = (unsigned char)(filesize);
+        bmpfileheader[3] = (unsigned char)(filesize>>8);
+        bmpfileheader[4] = (unsigned char)(filesize>>16);
+        bmpfileheader[5] = (unsigned char)(filesize>>24);
+
+        // DIB Header (40 bytes)
+        unsigned char bmpinfoheader[40] = {40,0,0,0, 0,0,0,0, 0,0,0,0, 1,0, 24,0};
+
+        fwrite(bmpfileheader, 1, 14, f);
+        fwrite(bmpinfoheader, 1, 40, f);
+        // Write 3 bytes of data
+        unsigned char data[3] = {0, 0, 0};
+        fwrite(data, 1, 3, f);
+        fclose(f);
+    }
     return 0;
 }
 void SDL_FreeSurface(SDL_Surface* surface) {}

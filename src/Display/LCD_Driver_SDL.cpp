@@ -142,9 +142,27 @@ void LCD_Quit() {
 
 // Screenshot function for PC
 void LCD_SaveScreenshot(const char* filename) {
-    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(frameBuffer, WINDOW_WIDTH, WINDOW_HEIGHT, 16, WINDOW_WIDTH * 2, SDL_PIXELFORMAT_RGB565);
-    SDL_SaveBMP(surface, filename);
-    SDL_FreeSurface(surface);
+    // Convert 565 to 888 for standard BMP compatibility
+    // Create a new surface with RGB888 format
+    SDL_Surface* surface565 = SDL_CreateRGBSurfaceWithFormatFrom((void*)frameBuffer, WINDOW_WIDTH, WINDOW_HEIGHT, 16, WINDOW_WIDTH * 2, SDL_PIXELFORMAT_RGB565);
+    if (!surface565) {
+        printf("Failed to create surface: %s\n", SDL_GetError());
+        return;
+    }
+
+    SDL_Surface* surface888 = SDL_ConvertSurfaceFormat(surface565, SDL_PIXELFORMAT_RGB24, 0);
+    if (!surface888) {
+        printf("Failed to convert surface: %s\n", SDL_GetError());
+        SDL_FreeSurface(surface565);
+        return;
+    }
+
+    if (SDL_SaveBMP(surface888, filename) != 0) {
+        printf("Failed to save BMP: %s\n", SDL_GetError());
+    }
+
+    SDL_FreeSurface(surface565);
+    SDL_FreeSurface(surface888);
 }
 
 void SDL_SetMouseState(int x, int y, bool pressed) {
