@@ -1,5 +1,7 @@
+#include "App.h"
 #include "DEV_Config.h"
 #include "EmulatorEngine.h"
+#include "LCD_Driver_SDL.h"
 #include "SensorMock.h"
 #include <cstdlib>
 #include <fstream>
@@ -21,7 +23,8 @@ protected:
   }
 
   void TearDown() override {
-    // Optional cleanup
+    // Reset delay callback
+    SetDriverDelayCallback(nullptr);
   }
 
   // Helper to compare images using ImageMagick
@@ -96,6 +99,50 @@ TEST_F(DisplayIntegrationTest, CheckpointStartup) {
     FAIL() << "ImageMagick comparison failed. Is 'compare' tool installed?";
   } else {
     ASSERT_LE(diff, 0) << "Startup screen mismatch! See diff_startup.bmp ("
+                       << diff << " pixels differ)";
+  }
+
+  engine.shutdown();
+}
+
+// Global pointer for callback access (needed because lambdas with captures can't
+// be converted to function pointers)
+static EmulatorEngine *g_engine_ptr = nullptr;
+
+TEST_F(DisplayIntegrationTest, CheckpointButtonPress) {
+  SensorMock sensor;
+  EmulatorEngine engine;
+
+  engine.initialize(&sensor);
+  g_engine_ptr = &engine;
+
+  // Define callback to capture screen during the 100ms feedback delay
+  SetDriverDelayCallback([](unsigned long ms) {
+    if (g_engine_ptr && ms == 100) {
+      g_engine_ptr->captureScreenshot("actual_pressed_info.bmp");
+    }
+  });
+
+  // Simulate pressing INFO button
+  SDL_SetMouseState(BTN_INFO_X + 10, BTN_INFO_Y + 10, true);
+  engine.stepFrames(1); // This triggers App_Loop -> Touch -> Feedback -> Delay
+                        // (callback) -> Transition
+
+  g_engine_ptr = nullptr;
+
+  int diff =
+      CompareWithReference("actual_pressed_info.bmp", "pressed_info.bmp");
+
+  if (diff == -2) {
+    std::cout << "[WARNING] Reference missing. Generated actual_pressed_info.bmp."
+              << std::endl;
+    // We expect this to fail initially as we don't have the golden sample
+    FAIL() << "Reference image missing: pressed_info.bmp. Generated "
+              "actual_pressed_info.bmp for manual inspection.";
+  } else if (diff == -1) {
+    FAIL() << "ImageMagick comparison failed. Is 'compare' tool installed?";
+  } else {
+    ASSERT_LE(diff, 0) << "Pressed state mismatch! See diff_pressed_info.bmp ("
                        << diff << " pixels differ)";
   }
 

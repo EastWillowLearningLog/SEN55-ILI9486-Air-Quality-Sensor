@@ -3,6 +3,7 @@
 
 // CoreLib component headers
 #include "App.h"
+#include "DEV_Config.h"
 #include "LCD_Driver_SDL.h"
 #include "SensorMock.h"
 
@@ -21,7 +22,8 @@ protected:
   }
 
   void TearDown() override {
-    // Test cleanup if needed
+    // Reset delay callback
+    SetDriverDelayCallback(nullptr);
   }
 };
 
@@ -65,6 +67,52 @@ TEST_F(CoreLibTest, InteractionTransitions) {
 
   EXPECT_EQ(App_GetState(), APP_STATE_MAIN)
       << "Failed to transition back to MAIN screen";
+}
+
+/**
+ * Test: Button Press Timing
+ * Validates that the visual feedback delay (100ms) and debounce delay (200ms)
+ * occur in the correct order.
+ */
+TEST_F(CoreLibTest, ButtonPressTiming) {
+  SensorMock sensor;
+  App_Setup(&sensor);
+
+  static std::vector<unsigned long> delays;
+  delays.clear();
+
+  SetDriverDelayCallback([](unsigned long ms) { delays.push_back(ms); });
+
+  // Click INFO button
+  SDL_SetMouseState(BTN_INFO_X + 5, BTN_INFO_Y + 5, true);
+  App_Loop(&sensor);
+
+  // We expect:
+  // 1. 100ms delay for visual feedback
+  // 2. 200ms delay for debounce
+  // Note: There might be other delays (e.g. 50ms loop delay if mocked), but
+  // typically loop delay is at end. Let's check the sequence contains 100 then
+  // 200.
+
+  bool foundFeedback = false;
+  bool foundDebounce = false;
+
+  for (size_t i = 0; i < delays.size(); ++i) {
+    if (!foundFeedback && delays[i] == 100) {
+      foundFeedback = true;
+      // Debounce must come AFTER feedback
+      for (size_t j = i + 1; j < delays.size(); ++j) {
+        if (delays[j] == 200) {
+          foundDebounce = true;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  EXPECT_TRUE(foundFeedback) << "Did not detect 100ms visual feedback delay";
+  EXPECT_TRUE(foundDebounce) << "Did not detect 200ms debounce delay";
 }
 
 /**

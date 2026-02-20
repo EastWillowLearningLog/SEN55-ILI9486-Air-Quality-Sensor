@@ -71,8 +71,10 @@ void Driver_Delay_us(int xus) {
 #include <unistd.h>
 
 static bool s_fastMode = false;
+static DelayCallback s_delayCallback = nullptr;
 
 void System_SetFastMode(bool fast) { s_fastMode = fast; }
+void SetDriverDelayCallback(DelayCallback cb) { s_delayCallback = cb; }
 
 uint8_t System_Init(void) {
   // Already handled in LCD_Init for SDL, or we can do console init here
@@ -90,6 +92,9 @@ void SPI4W_Write_Byte(uint8_t DATA) {
 uint8_t SPI4W_Read_Byte(uint8_t DATA) { return 0; }
 
 void Driver_Delay_ms(unsigned long xms) {
+  if (s_delayCallback) {
+    s_delayCallback(xms);
+  }
   if (s_fastMode)
     return;
   SDL_Delay(xms);

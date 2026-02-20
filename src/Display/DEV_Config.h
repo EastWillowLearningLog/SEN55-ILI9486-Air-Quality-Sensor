@@ -82,6 +82,10 @@ void Driver_Delay_us(int xus);
 #ifndef ARDUINO
 // Enable fast execution for tests (skips delays)
 void System_SetFastMode(bool fast);
+
+// Delay Callback for testing
+typedef void (*DelayCallback)(unsigned long xms);
+void SetDriverDelayCallback(DelayCallback cb);
 #endif
 
 #endif
